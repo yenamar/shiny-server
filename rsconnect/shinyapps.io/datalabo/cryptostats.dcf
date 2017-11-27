@@ -1,0 +1,12 @@
+name: cryptostats
+title: CryptoStats
+username:
+account: datalabo
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 239730
+bundleId: 1098681
+url: https://datalabo.shinyapps.io/cryptostats/
+when: 1511779730.13124
+asMultiple: FALSE
+asStatic: FALSE
