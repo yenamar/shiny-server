@@ -4,6 +4,9 @@ library(curl)
 library(shinycssloaders)
 library(DT)
 
+
+coin_list <- c("BCH","ETH","DASH","ZEC","XMR","LTC","ETC","BTG","EMC2","TRUST","TRIG","BTC")
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   
@@ -13,7 +16,7 @@ ui <- fluidPage(
   # Sidebar with input selectors
   sidebarLayout(
     sidebarPanel(
-      selectInput("curr",h3("Currency Selector"),choices=sort(c("BCH","ETH","DASH","ZEC","XMR","LTC","ETC","BTG","BTC")),multiple=TRUE,selected=sort(c("BCH","ETH","DASH","ZEC","XMR","LTC","ETC","BTG","BTC"))[1]),
+      selectInput("curr",h3("Currency Selector"),choices=sort(coin_list[-length(coin_list)]),multiple=TRUE,selected=coin_list[-length(coin_list)][1]),
       h3("Quick Quotient Calculator"),
       textInput("num1",h5("Coin Price"),value="",width="40%"),
       textInput("num2",h5("Ref Coin Price"),value="",width="40%"),
@@ -39,7 +42,7 @@ server <- function(input, output,session) {
   # Minutely for day 0-6
   # Hourly for day 7-30
   history_data <- NULL
-  coin_list <- c("BCH","ETH","DASH","ZEC","XMR","LTC","ETC","BTG","BTC")
+  
   
   # MINUTELY DATA FOR EACH COIN
   for (i in coin_list) {
@@ -342,7 +345,9 @@ server <- function(input, output,session) {
   output$weekly <- DT::renderDataTable(
     {invalidateLater(60000,session)
     stats_summ <<- weekly.calc()
-    DT::datatable(stats_summ[order(stats_summ$`Weekly Average`,decreasing = TRUE),])
+    DT::datatable(stats_summ[order(stats_summ$`Weekly Average`,decreasing = TRUE),],
+                  options = list(
+                    pageLength = 25))
     })
   
   
