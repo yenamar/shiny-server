@@ -5,8 +5,8 @@ account: datalabo
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 239730
-bundleId: 1098681
+bundleId: 1101770
 url: https://datalabo.shinyapps.io/cryptostats/
-when: 1511779730.13124
+when: 1511893112.71781
 asMultiple: FALSE
 asStatic: FALSE
