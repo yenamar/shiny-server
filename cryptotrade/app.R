@@ -90,6 +90,11 @@ server <- function(input, output,session) {
     history_data <- rbind(history_data,temp)
   }
   
+  history_data$close <- as.numeric(history_data$close)
+  history_data$open <- as.numeric(history_data$open)
+  history_data$high <- as.numeric(history_data$high)
+  history_data$low <- as.numeric(history_data$low)
+  
   # REAL TIME DATA
   real.time.data <- function() {
     rt <-fromJSON(paste0("https://min-api.cryptocompare.com/data/pricemultifull?fsyms=",paste(coin_list,collapse = ","),"&tsyms=BTC,USD"))
@@ -105,6 +110,10 @@ server <- function(input, output,session) {
                          i, 
                          "BTC")
       names(temp) <- names(history_data)
+      temp$close <- as.numeric(temp$close)
+      temp$open <- as.numeric(temp$open)
+      temp$high <- as.numeric(temp$high)
+      temp$low <- as.numeric(temp$low)
       history_data <<- rbind(history_data,temp)
       temp <- data.frame(temp.time, 
                          getElement(rt$RAW,i)$USD$PRICE,  
@@ -116,6 +125,10 @@ server <- function(input, output,session) {
                          i, 
                          "USD")
       names(temp) <- names(history_data)
+      temp$close <- as.numeric(temp$close)
+      temp$open <- as.numeric(temp$open)
+      temp$high <- as.numeric(temp$high)
+      temp$low <- as.numeric(temp$low)
       history_data <<- rbind(history_data,temp)
     }
     print("executed")
