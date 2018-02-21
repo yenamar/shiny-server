@@ -20,7 +20,8 @@ myUser <- "simonbowerbank"
 myPassword <- "firstlover1487!"
 #myPassword <- "firstlover1487"
 myDatabase <- "auctionsales"
-myDriver <- "SQL Server" # Must correspond to an entry in the Drivers tab of "ODBC Data Sources"
+#myDriver <- "ODBC Driver 13 for SQL Server" # Must correspond to an entry in the Drivers tab of "ODBC Data Sources"
+myDriver <- "SQL Server"
 
 connectionString <- paste0(
   "Driver=", myDriver, 
@@ -72,12 +73,14 @@ ys$ySD <- ifelse(is.na(ys$y.Estimate_low), max(na.omit(ys$ySD)), ys$ySD)
 ys$ySD <- ifelse(is.na(ys$y.Price), mean(na.omit(ys$ySD)) , ys$ySD) 
 ys$weights = 1-ys$ySD/max(ys$ySD)
 ys$weights <- ifelse(ys$weights == 0, .03, ys$weights) 
-min <- min(wb$YearSold)
-max <- max(wb$YearSold)
+min <- min(wb$YearSold,na.rm = TRUE)
+max <- max(wb$YearSold,na.rm=TRUE)
 normalize <- function(vec, min, max) {
   (vec-min) / (max-min)
 }
 normyear <- normalize(y$YearSold, min, max)
+normyear[is.na(normyear)] <- mean(normyear,na.rm=TRUE)
+
 ys$weights <- normyear*ys$weights
 weights <- as.array(ys$weights)
 y <- ifelse(is.na(ys$y.Estimate_low), ifelse(is.na(ys$y.Price),0.1,ys$y.Price), ys$y.Estimate_low)
@@ -109,7 +112,7 @@ mm <- cbind(mm,wb %>% dplyr::select(Medium_WaterColour,Medium_Acrylic,
                             Medium_Metallicpaint,Medium_Etching,Medium_Fibretippen,Medium_Wood,         
                             Medium_Offset,Medium_Ink,Medium_Goldleaf,Medium_Graphite,     
                             Medium_Pastel,Medium_Collage,Medium_Woodblock,medium_chalk,        
-                            Medium_Gelatinsilver,Medium_Inkjetprint) )
+                            Medium_Gelatinsilver,Medium_Inkjetprint,Signed) )
 mm[is.na(mm)] <- 0
 mm <- mm[, colSums(mm) != 0]
 mm <- mm[, colSums(mm) != 1]
@@ -119,14 +122,15 @@ for(i in 1:ncol(x)){x[is.na(x[,i]), i] <- mean(x[,i], na.rm = TRUE)}
 
 #x data
 ntrain <- ncol(x)
-model <- keras_model_sequential() 
+model <- keras_model_sequential()
 model %>%
-  layer_dense(units = 80, activation = 'tanh', input_shape = c(ntrain), regularizer_l1_l2(l1 = 0.01, l2 = 0.01)) %>% 
-#  layer_dropout(rate=0.1)  %>%
-  layer_dense(units = 80, activation = 'tanh', regularizer_l1_l2(l1 = 0.01, l2 = 0.01)) %>% 
-#  layer_dropout(rate=0.1)  %>%
-  layer_dense(units = 1, activation='linear', regularizer_l1_l2(l1 = 0.01, l2 = 0.01)) 
+  layer_dense(units = 80, activation = 'tanh', input_shape = c(ntrain), regularizer_l1_l2(l1 = 0.01, l2 = 0.01)) %>%
+    layer_dropout(rate=0.1)  %>%
+  layer_dense(units = 80, activation = 'tanh', regularizer_l1_l2(l1 = 0.01, l2 = 0.01)) %>%
+    layer_dropout(rate=0.1)  %>%
+  layer_dense(units = 1, activation='linear', regularizer_l1_l2(l1 = 0.01, l2 = 0.01))
 model %>% compile(optimizer = 'adam', loss = 'mse') #1. mse or 2. mae
+
 
 history <-model %>% fit(x, y, epochs = 100, batch_size = 5, sample_weight=weights) #, validation_split = 0.15) # callbacks = c(early_stopping)
 
@@ -148,6 +152,9 @@ setcolorder(wb, as.character(names(data)))
 
 
 # Write SQL update statement
+conn <- odbcDriverConnect(connectionString)
+
+sqlDrop(conn,"FileDataUpdated")
 sqlSave(conn, wb,tablename="FileDataUpdated",rownames =FALSE)
 
 sql<-"update FileData set FileData.Current_Value=FileDataUpdated.Current_Value output inserted.Current_Value from FileData inner join FileDataUpdated on FileData.Sale_Id = FileDataUpdated.Sale_Id"
