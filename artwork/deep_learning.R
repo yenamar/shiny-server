@@ -14,6 +14,9 @@ library(reshape2)
 library(RODBC)           # Provides database connectivity
 library(plotly)
 library(data.table)
+library(DBI)
+
+dataavailable <- NULL
 
 myServer <- "artstats.database.windows.net"
 myUser <- "simonbowerbank"
@@ -30,12 +33,17 @@ connectionString <- paste0(
   ";Uid=", myUser, 
   ";Pwd=", myPassword)
 
+conn <- DBI::dbConnect(odbc::odbc(),
+                      driver = "SQL Server",
+                      server = myServer,
+                      database = myDatabase,
+                      uid = myUser,
+                      pwd = myPassword)
 
-conn <- odbcDriverConnect(connectionString)
+#conn <- odbcDriverConnect(connectionString)
 
-
-data <- sqlQuery(conn, "select * from FileData")
-
+data <- dbReadTable(conn, "FileData")
+dbDisconnect(conn)
 
 w <- data
 w$YearSold <- as.numeric(format(as.Date(w$YearSold, format="%d/%m/%Y"),"%Y"))
@@ -107,6 +115,9 @@ for (i in 1:ncolumns) {
 mm <- dummyVars(as.formula(paste("~", paste0(columns, sep="", collapse=""))), fullRank=T, data=wb)
 
 mm <- data.frame(predict(mm, newdata = wb))
+
+
+wb[,c(9:26,33,34)] <- as.numeric(as.character(wb[,c(9:26,33,34)]))
 mm <- cbind(mm,wb %>% dplyr::select(Medium_WaterColour,Medium_Acrylic,
                             Medium_Oil,Medium_Gouache,Medium_Enamel,Medium_Lithograph,   
                             Medium_Metallicpaint,Medium_Etching,Medium_Fibretippen,Medium_Wood,         
@@ -146,21 +157,33 @@ wb$estimate <- exp(unstandardize(y))
 
 wb <- left_join(wb %>% dplyr::select(Sale_Id,Current_Value),
                 w %>% dplyr::select(-Current_Value,-age,-area))
-
 setDT(wb)
 setcolorder(wb, as.character(names(data)))
 
+upd <- wb %>% dplyr::select(Sale_Id,Current_Value)
 
 # Write SQL update statement
+conn <- DBI::dbConnect(odbc::odbc(),
+                       driver = "SQL Server",
+                       server = myServer,
+                       database = myDatabase,
+                       uid = myUser,
+                       pwd = myPassword)
+
+
+if(dbExistsTable(conn, "FileDataUpdated")) {dbRemoveTable(conn, "FileDataUpdated")}
+dbWriteTable(conn,"FileDataUpdated",upd)
+
+dbDisconnect(conn)
+
 conn <- odbcDriverConnect(connectionString)
-
-sqlDrop(conn,"FileDataUpdated")
-sqlSave(conn, wb,tablename="FileDataUpdated",rownames =FALSE)
-
 sql<-"update FileData set FileData.Current_Value=FileDataUpdated.Current_Value output inserted.Current_Value from FileData inner join FileDataUpdated on FileData.Sale_Id = FileDataUpdated.Sale_Id"
 resultset <- sqlQuery(conn,sql)
-sqlDrop(conn,"FileDataUpdated")
 
+sqlDrop(conn,"FileDataUpdated")
+odbcClose(conn)
+
+dataavailable <- 1
 
 # for (i in unique(as.character(wb$artworkid))) {
 # 

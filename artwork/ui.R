@@ -10,7 +10,12 @@ dashboardPage(
   
   dashboardSidebar(
     sidebarMenu(id = "sbmenu",
-    menuItem("Prices", tabName = "prices", icon = icon("line-chart")))
+    menuItem("Prices", tabName = "prices", icon = icon("line-chart")),
+    br(),
+    actionButton("buttonRunAnalysis", "Update predictions", icon = icon("arrow-circle-right"), width="87%")
+    )
+    
+    
   ),
   
   dashboardBody(
@@ -19,12 +24,14 @@ dashboardPage(
       
       tabItem(tabName = "prices",
               h2("Artwork Prices"),
+              conditionalPanel(condition = "input.buttonRunAnalysis%2 == 1",
               fluidRow(
                 box(
                   title = "Table", width = 12, status = "primary",collapsible = FALSE,
                   withSpinner(dataTableOutput("table_plot"))
                 )
-              )
+              ))
+              
       )
   )))
   
