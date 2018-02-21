@@ -23,8 +23,8 @@ myUser <- "simonbowerbank"
 myPassword <- "firstlover1487!"
 #myPassword <- "firstlover1487"
 myDatabase <- "auctionsales"
-#myDriver <- "ODBC Driver 13 for SQL Server" # Must correspond to an entry in the Drivers tab of "ODBC Data Sources"
-myDriver <- "SQL Server"
+myDriver <- "ODBC Driver 13 for SQL Server" # Must correspond to an entry in the Drivers tab of "ODBC Data Sources"
+#myDriver <- "SQL Server"
 
 connectionString <- paste0(
   "Driver=", myDriver, 
@@ -33,17 +33,19 @@ connectionString <- paste0(
   ";Uid=", myUser, 
   ";Pwd=", myPassword)
 
-conn <- DBI::dbConnect(odbc::odbc(),
-                      driver = "SQL Server",
-                      server = myServer,
-                      database = myDatabase,
-                      uid = myUser,
-                      pwd = myPassword)
+# conn <- DBI::dbConnect(odbc::odbc(),
+#                       driver = "SQL Server",
+#                       server = myServer,
+#                       database = myDatabase,
+#                       uid = myUser,
+#                       pwd = myPassword)
 
-#conn <- odbcDriverConnect(connectionString)
+conn <- odbcDriverConnect(connectionString)
 
-data <- dbReadTable(conn, "FileData")
-dbDisconnect(conn)
+data <- sqlFetch(conn,"FileData")
+#data <- dbReadTable(conn, "FileData")
+#dbDisconnect(conn)
+close(conn)
 
 w <- data
 w$YearSold <- as.numeric(format(as.Date(w$YearSold, format="%d/%m/%Y"),"%Y"))
@@ -164,7 +166,7 @@ upd <- wb %>% dplyr::select(Sale_Id,Current_Value)
 
 # Write SQL update statement
 conn <- DBI::dbConnect(odbc::odbc(),
-                       driver = "SQL Server",
+                       driver = "ODBC Driver 13 for SQL Server",
                        server = myServer,
                        database = myDatabase,
                        uid = myUser,
